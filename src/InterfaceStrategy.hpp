@@ -11,27 +11,30 @@ namespace imu {
 class BusStrategy {
 public:
   /* read should be implemented as read from a register that fills data */
-  virtual int read(const uint8_t addr, uint8_t * data) = 0;
+  virtual int Read(const uint8_t addr, uint8_t & data) = 0;
 
   /* write should be implemented as a write of data to a register */
-  virtual int write(const uint8_t addr, const uint8_t data) = 0;
+  virtual int Write(const uint8_t addr, const uint8_t data) = 0;
+
+  /* initialize */
+  virtual int Initialize(const int, const int) = 0;
 
 }; // class BusStrategy
 
 /*! I2cStrategy implements BusStrategy
  *
 */
-class I2cStrategy : BusStrategy {
+class I2cStrategy : public BusStrategy {
 public:
   I2cStrategy();
   ~I2cStrategy();
 
   // Inherited from BusStrategy
-  int read(const uint8_t addr, uint8_t * data);
-  int write(const uint8_t addr, const uint8_t data);
+  int Read(const uint8_t addr, uint8_t & data) override;
+  int Write(const uint8_t addr, const uint8_t data) override;
 
   // Initialization
-  int Initialize(const int, const int);
+  int Initialize(const int, const int) override;
 
 private:
   // i2c bus management

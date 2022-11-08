@@ -1,13 +1,16 @@
 #include "InterfaceStrategy.hpp"
 
 // C Includes
-#include <linux/i2c-dev.h>
-#include <i2c/smbus.h>
 #include <cstdio>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
-
-
+// https://stackoverflow.com/questions/50154296/undefined-reference-to-i2c-smbus-read-word-dataint-unsigned-char
+// needs to be wrapped in extern C statement because it is not C++ ready
+extern "C" {
+#include <linux/i2c-dev.h>
+#include <i2c/smbus.h>
+}
 
 imu::I2cStrategy::I2cStrategy()
 {
@@ -48,7 +51,7 @@ int imu::I2cStrategy::Initialize(const int adapter_number, const int i2c_address
 }
 
 /* Use smbus call to read byte data from i2c */
-int imu::I2cStrategy::read(const uint8_t addr, uint8_t& data)
+int imu::I2cStrategy::Read(const uint8_t addr, uint8_t& data)
 {
     int32_t response = i2c_smbus_read_byte_data(m_i2c_file, addr);
 
@@ -63,7 +66,7 @@ int imu::I2cStrategy::read(const uint8_t addr, uint8_t& data)
 }
 
 /* Use smbus call to write byte data to i2c */
-int imu::I2cStrategy::write(const uint8_t addr, const uint8_t data)
+int imu::I2cStrategy::Write(const uint8_t addr, const uint8_t data)
 {
     int32_t response = i2c_smbus_write_byte_data(m_i2c_file, addr, data);
 

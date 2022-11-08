@@ -4,10 +4,13 @@
 #include <stdint.h>
 
 // Registers for ICM-20948
+// Taken from ICM-20948 DataSheet
+// Scoped enums are used since register names are duplicated
+// between User Banks
 
 namespace imu {
 
-typedef enum : uint8_t {
+enum class UserBank0Registers : uint8_t {
     kWHO_AM_I             = 0x00,
     kUSER_CTRL            = 0x03,
     kLP_CONFIG            = 0x05,
@@ -73,9 +76,9 @@ typedef enum : uint8_t {
     kDATA_RDY_STATUS      = 0x74,
     kFIFO_CFG             = 0x76,
     kREG_BANK_SEL         = 0x7F
-} UserBank0Registers;
+};
 
-typedef enum : uint8_t {
+enum class UserBank1Registers : uint8_t {
     kSELF_TEST_X_GYRO   = 0x02,
     kSELF_TEST_Y_GYRO   = 0x03,
     kSELF_TEST_Z_GYRO   = 0x04,
@@ -90,58 +93,58 @@ typedef enum : uint8_t {
     kZA_OFFS_L          = 0x1B,
     kTIMEBASE_CORRECTIO = 0x28,
     kREG_BANK_SEL       = 0x7F
-} UserBank1Registers;
+};
 
-typedef enum : uint8_t {
-    GYRO_SMPLRT_DIV    = 0x00,
-    GYRO_CONFIG_1      = 0x01,
-    GYRO_CONFIG_2      = 0x02,
-    XG_OFFS_USRH       = 0x03,
-    XG_OFFS_USRL       = 0x04,
-    YG_OFFS_USRH       = 0x05,
-    YG_OFFS_USRL       = 0x06,
-    ZG_OFFS_USRH       = 0x07,
-    ZG_OFFS_USRL       = 0x08,
-    ODR_ALIGN_EN       = 0x09,
-    ACCEL_SMPLRT_DIV_1 = 0x10,
-    ACCEL_SMPLRT_DIV_2 = 0x11,
-    ACCEL_INTEL_CTRL   = 0x12,
-    ACCEL_WOM_THR      = 0x13,
-    ACCEL_CONFIG       = 0x14,
-    ACCEL_CONFIG_2     = 0x15,
-    FSYNC_CONFIG       = 0x52,
-    TEMP_CONFIG        = 0x53,
-    MOD_CTRL_USR       = 0x54,
-    REG_BANK_SEL       = 0x7F
-} UserBank2Registers;
+enum class UserBank2Registers : uint8_t {
+    kGYRO_SMPLRT_DIV    = 0x00,
+    kGYRO_CONFIG_1      = 0x01,
+    kGYRO_CONFIG_2      = 0x02,
+    kXG_OFFS_USRH       = 0x03,
+    kXG_OFFS_USRL       = 0x04,
+    kYG_OFFS_USRH       = 0x05,
+    kYG_OFFS_USRL       = 0x06,
+    kZG_OFFS_USRH       = 0x07,
+    kZG_OFFS_USRL       = 0x08,
+    kODR_ALIGN_EN       = 0x09,
+    kACCEL_SMPLRT_DIV_1 = 0x10,
+    kACCEL_SMPLRT_DIV_2 = 0x11,
+    kACCEL_INTEL_CTRL   = 0x12,
+    kACCEL_WOM_THR      = 0x13,
+    kACCEL_CONFIG       = 0x14,
+    kACCEL_CONFIG_2     = 0x15,
+    kFSYNC_CONFIG       = 0x52,
+    kTEMP_CONFIG        = 0x53,
+    kMOD_CTRL_USR       = 0x54,
+    kREG_BANK_SEL       = 0x7F
+};
 
-typedef enum : uint8_t {
-    I2C_MST_ODR_CONFIG = 0x00,
-    I2C_MST_CTRL       = 0x01,
-    I2C_MST_DELAY_CTRL = 0x02,
-    I2C_SLV0_ADDR      = 0x03,
-    I2C_SLV0_REG       = 0x04,
-    I2C_SLV0_CTRL      = 0x05,
-    I2C_SLV0_DO        = 0x06,
-    I2C_SLV1_ADDR      = 0x07,
-    I2C_SLV1_REG       = 0x08,
-    I2C_SLV1_CTRL      = 0x09,
-    I2C_SLV1_DO        = 0x0A,
-    I2C_SLV2_ADDR      = 0x0B,
-    I2C_SLV2_REG       = 0x0C,
-    I2C_SLV2_CTRL      = 0x0D,
-    I2C_SLV2_DO        = 0x0E,
-    I2C_SLV3_ADDR      = 0x0F,
-    I2C_SLV3_REG       = 0x10,
-    I2C_SLV3_CTRL      = 0x11,
-    I2C_SLV3_DO        = 0x12,
-    I2C_SLV4_ADDR      = 0x13,
-    I2C_SLV4_REG       = 0x14,
-    I2C_SLV4_CTRL      = 0x15,
-    I2C_SLV4_DO        = 0x16,
-    I2C_SLV4_DI        = 0x17,
-    REG_BANK_SEL       = 0x7F
-} UserBank3Registers;
+enum class UserBank3Registers : uint8_t {
+    kI2C_MST_ODR_CONFIG = 0x00,
+    kI2C_MST_CTRL       = 0x01,
+    kI2C_MST_DELAY_CTRL = 0x02,
+    kI2C_SLV0_ADDR      = 0x03,
+    kI2C_SLV0_REG       = 0x04,
+    kI2C_SLV0_CTRL      = 0x05,
+    kI2C_SLV0_DO        = 0x06,
+    kI2C_SLV1_ADDR      = 0x07,
+    kI2C_SLV1_REG       = 0x08,
+    kI2C_SLV1_CTRL      = 0x09,
+    kI2C_SLV1_DO        = 0x0A,
+    kI2C_SLV2_ADDR      = 0x0B,
+    kI2C_SLV2_REG       = 0x0C,
+    kI2C_SLV2_CTRL      = 0x0D,
+    kI2C_SLV2_DO        = 0x0E,
+    kI2C_SLV3_ADDR      = 0x0F,
+    kI2C_SLV3_REG       = 0x10,
+    kI2C_SLV3_CTRL      = 0x11,
+    kI2C_SLV3_DO        = 0x12,
+    kI2C_SLV4_ADDR      = 0x13,
+    kI2C_SLV4_REG       = 0x14,
+    kI2C_SLV4_CTRL      = 0x15,
+    kI2C_SLV4_DO        = 0x16,
+    kI2C_SLV4_DI        = 0x17,
+    kREG_BANK_SEL       = 0x7F
+};
 
 } // namespace imu
 

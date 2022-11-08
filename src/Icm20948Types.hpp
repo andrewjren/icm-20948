@@ -6,6 +6,8 @@
 
 namespace imu {
 
+namespace decode {
+
 // Bank 0
 typedef uint8_t WHO_AM_I;
 
@@ -170,7 +172,7 @@ typedef uint8_t GYRO_ZOUT_H;
 typedef uint8_t GYRO_ZOUT_L;
 typedef uint8_t TEMP_OUT_H;
 typedef uint8_t TEMP_OUT_L;
-typedef uint8_t EXT_SLV_SENS_DATA[ICM20948_EXT_SLV_SENS_DATA_COUNT];
+typedef uint8_t EXT_SLV_SENS_DATA[24]; // 24 external slave sense data registers
 
 typedef union {
     struct {
@@ -219,10 +221,10 @@ typedef union {
     uint8_t byte;
 } FIFO_COUNTH;
 
-uint8_t FIFO_COUNTL;
-uint8_t FIFO_R_W;
-uint8_t DATA_RDY_STATUS;
-uint8_t FIFO_CFG;
+typedef uint8_t FIFO_COUNTL;
+typedef uint8_t FIFO_R_W;
+typedef uint8_t DATA_RDY_STATUS;
+typedef uint8_t FIFO_CFG;
 
 typedef union {
     struct {
@@ -274,6 +276,7 @@ typedef union {
 
 typedef uint8_t TIMEBASE_CORRECTION_PLL;
 
+/*
 typedef union {
     struct {
         uint8_t RSVD0               : 4;
@@ -282,7 +285,7 @@ typedef union {
     } bits;
     uint8_t byte;
 } REG_BANK_SEL;
-
+*/
 
 // Bank 2
 
@@ -393,6 +396,7 @@ typedef union {
     uint8_t byte;
 } MOD_CTRL_USR;
 
+/*
 typedef union {
     struct {
         uint8_t RSVD0               : 4;
@@ -401,7 +405,7 @@ typedef union {
     } bits;
     uint8_t byte;
 } REG_BANK_SEL;
-
+*/
 
 // Bank 3
 
@@ -472,7 +476,7 @@ typedef union {
 
 typedef uint8_t I2C_SLV1_REG;
 
-typedef typedef union {
+typedef union {
     struct {
         uint8_t I2C_SLV1_LENG       : 4;
         uint8_t I2C_SLV1_GRP        : 1;
@@ -557,6 +561,7 @@ typedef union {
 
 typedef uint8_t I2C_SLV4_DO;
 
+/*
 typedef union {
     struct {
         uint8_t RSVD0               : 4;
@@ -565,6 +570,9 @@ typedef union {
     } bits;
     uint8_t byte;
 } REG_BANK_SEL;
+*/
+
+} // namespace decode
 
 } // namespace imu
 
