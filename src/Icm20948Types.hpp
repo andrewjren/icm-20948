@@ -426,7 +426,7 @@ typedef union {
         uint8_t MULT_MST_EN         : 1;
     } bits;
     uint8_t byte;
-} ISC_MST_CTRL;
+} I2C_MST_CTRL;
 
 typedef union {
     struct {

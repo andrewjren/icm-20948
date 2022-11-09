@@ -1,1 +1,3 @@
-create return value types
+create common return value types
+pass in tomls as config params
+determine what should go where (registers, addresses, decoding, etc)

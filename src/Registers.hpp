@@ -7,6 +7,7 @@
 // Taken from ICM-20948 DataSheet
 // Scoped enums are used since register names are duplicated
 // between User Banks
+// Names match Datasheet
 
 namespace imu {
 
@@ -144,6 +145,20 @@ enum class UserBank3Registers : uint8_t {
     kI2C_SLV4_DO        = 0x16,
     kI2C_SLV4_DI        = 0x17,
     kREG_BANK_SEL       = 0x7F
+};
+
+enum class MagRegisters : uint8_t {
+    kWIA2  = 0x01,
+    kST1   = 0x10,
+    kHXL   = 0x11,
+    kHXH   = 0x12,
+    kHYL   = 0x13,
+    kHYH   = 0x14,
+    kHZL   = 0x15,
+    kHZH   = 0x16,
+    kST2   = 0x18,
+    kCNTL2 = 0x31,
+    kCNTL3 = 0x32
 };
 
 } // namespace imu
