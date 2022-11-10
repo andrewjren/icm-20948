@@ -1,4 +1,8 @@
+
+
+// Project Includes
 #include "Icm20948.hpp"
+#include "CoreTypes.hpp"
 
 imu::Icm20948Interface::Icm20948Interface()
 :
@@ -8,7 +12,7 @@ m_bus(nullptr)
 imu::Icm20948Interface::~Icm20948Interface()
 { }
 
-int imu::Icm20948Interface::Initialize()
+core::Result imu::Icm20948Interface::Initialize()
 {
     // allocate memory for bus writer
     m_bus.reset(new imu::I2cStrategy());
@@ -16,27 +20,27 @@ int imu::Icm20948Interface::Initialize()
     // initialize bus
     if (m_bus->Initialize(1, kIcm20948Addr) < 0)
     {
-        return -1; // Did not initialize correctly
+        return core::kBusFail; // Did not initialize correctly
     }
 
     // CheckWhoAmI()
     // Change User Bank to 0
     if (ChangeUserBank(0) < 0)
     {
-        return -2; 
+        return core::kBusFail; 
     }
 
     // determine WHO_AM_I
     imu::decode::WHO_AM_I who_am_i;
     if (m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kWHO_AM_I), who_am_i) < 0)
     {
-        return -3;
+        return core::kBusFail;
     }
 
     // verify WHO_AM_I is correct
     if (kWhoAmIDefault != who_am_i)
     {
-        return -4;
+        return core::kFail;
     }
 
     // ResetChip()
@@ -54,7 +58,7 @@ int imu::Icm20948Interface::Initialize()
 
     if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
     {
-        return -5;
+        return core::kBusFail;
     }
 
     // Set Sample Mode for Gyro and Accel
@@ -65,35 +69,38 @@ int imu::Icm20948Interface::Initialize()
 
     // SetupMagnetometer
     
-    return 0;
+    return core::kGood;
 }
 
-/** SetupMagnetometer sets up AK09916
- * 
+/** 
+ * Sets up AK09916 as I2C Slave on secondary I2C Bus
 */
-int imu::Icm20948Interface::SetupMagnetometer()
+core::Result imu::Icm20948Interface::SetupMagnetometer()
 {
-    // Disable I2c Master Passthrough
-
-    // EnableI2cMaster
+    if (core::kGood != DisableI2cMasterPassthrough()) {
+        return core::kFail;
+    }
+    
+    if (core::kGood != EnableI2cMaster()) {
+        return core::kFail;
+    }
 
     // Verify Mag Who Am I
 
     // Set Magnetometer rate
 
-    // configure i2c master to read magnetometer
-
+    return core::kGood;
 }
 
 /**
- * 
+ * Enables I2C Master on ICM 20948
 */
-int imu::Icm20948Interface::EnableI2cMaster()
+core::Result imu::Icm20948Interface::EnableI2cMaster()
 {
     // Change to UserBank0
     if (ChangeUserBank(0) < 0)
     {
-        return -1;
+        return core::kBusFail;
     }
 
     imu::decode::USER_CTRL user_ctrl;
@@ -105,15 +112,15 @@ int imu::Icm20948Interface::EnableI2cMaster()
     user_ctrl.bits.I2C_MST_RST = 0;
     user_ctrl.bits.SRAM_RST = 0;
     
-    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kUSER_CTRL), user_ctrl.byte) < 0)
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kUSER_CTRL), user_ctrl.byte))
     {
-        return -1;
+        return core::kBusFail;
     }
 
     // Change to UserBank3
-    if (ChangeUserBank(3) < 0)
+    if (core::kGood != ChangeUserBank(3))
     {
-        return -1;
+        return core::kBusFail;
     }
 
     imu::decode::I2C_MST_CTRL i2c_mst_ctrl;
@@ -121,26 +128,56 @@ int imu::Icm20948Interface::EnableI2cMaster()
     i2c_mst_ctrl.bits.I2C_MST_P_NSR = 0;
     i2c_mst_ctrl.bits.MULT_MST_EN = 0;
 
-    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_MST_CTRL), i2c_mst_ctrl.byte) < 0)
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_MST_CTRL), i2c_mst_ctrl.byte))
     {
-        return -1;
+        return core::kBusFail;
     }
 
     // Change to UserBank0
-    if (ChangeUserBank(0) < 0)
+    if (core::kGood != ChangeUserBank(0))
     {
-        return -1;
+        return core::kBusFail;
     }
 
-    return 0;
+    return core::kGood;
 }
 
-int imu::Icm20948Interface::ChangeUserBank(int user_bank)
+/**
+ * Disables I2C Master Passthrough by ensuring SCL/SDA and AUX_CL/AUX_DA are not shorted
+*/
+core::Result imu::Icm20948Interface::DisableI2cMasterPassthrough()
+{
+    // Switch to User Bank 0
+    if (ChangeUserBank(0) != core::kGood)
+    {
+        return core::kBusFail;
+    }
+
+    // Read current pin config
+    imu::decode::INT_PIN_CFG int_pin_cfg;
+
+    if (core::kGood != m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kINT_PIN_CFG), int_pin_cfg.byte))
+    {
+        return core::kBusFail;
+    }
+
+    // Set Disable I2C Master Passthrough
+    int_pin_cfg.bits.BYPASS_EN = 0;
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kINT_PIN_CFG), int_pin_cfg.byte))
+    {
+        return core::kBusFail;
+    }
+
+    return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::ChangeUserBank(int user_bank)
 {
     // range check desired user bank
     if (user_bank < 0 || user_bank > 3)
     {
-        return -1;
+        return core::kFail;
     }
 
     // set selected user bank
@@ -150,8 +187,8 @@ int imu::Icm20948Interface::ChangeUserBank(int user_bank)
     // User Bank selection is on the same register on User Banks 0-3
     if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kREG_BANK_SEL), reg_bank_sel.byte) < 0)
     {
-        return -2; 
+        return core::kBusFail; 
     }
 
-    return 0;
+    return core::kGood;
 }

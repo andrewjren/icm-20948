@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "CoreTypes.hpp"
+
 namespace imu {
 
 /*! BusStrategy implements a Strategy Pattern
@@ -11,13 +13,13 @@ namespace imu {
 class BusStrategy {
 public:
   /* read should be implemented as read from a register that fills data */
-  virtual int Read(const uint8_t addr, uint8_t & data) = 0;
+  virtual core::Result Read(const uint8_t addr, uint8_t & data) = 0;
 
   /* write should be implemented as a write of data to a register */
-  virtual int Write(const uint8_t addr, const uint8_t data) = 0;
+  virtual core::Result Write(const uint8_t addr, const uint8_t data) = 0;
 
   /* initialize */
-  virtual int Initialize(const int, const int) = 0;
+  virtual core::Result Initialize(const int, const int) = 0;
 
 }; // class BusStrategy
 
@@ -30,11 +32,11 @@ public:
   ~I2cStrategy();
 
   // Inherited from BusStrategy
-  int Read(const uint8_t addr, uint8_t & data) override;
-  int Write(const uint8_t addr, const uint8_t data) override;
+  core::Result Read(const uint8_t addr, uint8_t & data) override;
+  core::Result Write(const uint8_t addr, const uint8_t data) override;
 
   // Initialization
-  int Initialize(const int, const int) override;
+  core::Result Initialize(const int, const int) override;
 
 private:
   // i2c bus management

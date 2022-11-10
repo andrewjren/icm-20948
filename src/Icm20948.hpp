@@ -9,6 +9,7 @@
 #include "Icm20948Types.hpp"
 #include "Registers.hpp"
 #include "InterfaceStrategy.hpp"
+#include "CoreTypes.hpp"
 
 namespace imu {
 
@@ -17,13 +18,13 @@ public:
   Icm20948Interface();
   ~Icm20948Interface();
 
-  int Initialize();
+  core::Result Initialize();
 
 private:
   // Initialization Methods
-  int SetupMagnetometer();
-  int EnableI2cMaster();
-  int ChangeUserBank(int);
+  core::Result SetupMagnetometer();
+  core::Result EnableI2cMaster();
+  core::Result ChangeUserBank(int);
 
   std::unique_ptr<BusStrategy> m_bus;
 

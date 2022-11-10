@@ -10,6 +10,7 @@ add_library(icm20948 STATIC ${src})
 target_include_directories(icm20948
 INTERFACE
 ${CMAKE_CURRENT_SOURCE_DIR}
+"${CMAKE_CURRENT_SOURCE_DIR}/core"
 )
 
 target_link_libraries(icm20948
