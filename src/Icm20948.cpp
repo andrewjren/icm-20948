@@ -85,7 +85,15 @@ core::Result imu::Icm20948Interface::SetupMagnetometer()
         return core::kFail;
     }
 
+    // Setup Magnetometer Register Addresses
+    if (core::kGood != SetupRegisterBlock()) {
+        return core::kFail;
+    }
+
     // Verify Mag Who Am I
+    if (core::kGood != VerifyMagWhoAmI()) {
+        return core::kFail;
+    }
 
     // Set Magnetometer rate
 
@@ -125,8 +133,8 @@ core::Result imu::Icm20948Interface::EnableI2cMaster()
 
     imu::decode::I2C_MST_CTRL i2c_mst_ctrl;
     i2c_mst_ctrl.bits.I2C_MST_CLK = 7; // 400 Hz
-    i2c_mst_ctrl.bits.I2C_MST_P_NSR = 0;
-    i2c_mst_ctrl.bits.MULT_MST_EN = 0;
+    i2c_mst_ctrl.bits.I2C_MST_P_NSR = 0; // restart between reads
+    i2c_mst_ctrl.bits.MULT_MST_EN = 0; // disable multi master mode
 
     if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_MST_CTRL), i2c_mst_ctrl.byte))
     {
@@ -169,6 +177,92 @@ core::Result imu::Icm20948Interface::DisableI2cMasterPassthrough()
         return core::kBusFail;
     }
 
+    return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::SetupRegisterBlock()
+{
+    // Change to User Bank 3
+    if (core::kGood != ChangeUserBank(3))
+    {
+        return core::kBusFail;
+    }
+
+    // Set I2C Target 0,1 to be Magnetometer address
+    imu::decode::I2C_SLV_ADDR i2c_slv01_addr;
+    i2c_slv01_addr.bits.I2C_SLV_RNW = 1; // transfer is a read
+    i2c_slv01_addr.bits.I2C_ID = kAk09916Addr; // magnetometer address
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV0_ADDR), i2c_slv01_addr.byte))
+    {
+        return core::kBusFail;
+    }
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV1_ADDR), i2c_slv01_addr.byte))
+    {
+        return core::kBusFail;
+    }
+
+    // Map WhoAmI to EXT_SENS_0
+    // WIA Starts at 0x01
+    if(core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV0_REG), 0x01))
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::I2C_SLV_CTRL i2c_slv0_ctrl;
+    i2c_slv0_ctrl.bits.I2C_SLV_EN = 1; // enable reading
+    i2c_slv0_ctrl.bits.I2C_SLV_BYTE_SW = 0; // disable byte swapping
+    i2c_slv0_ctrl.bits.I2C_SLV_REG_DIS = 0;
+    i2c_slv0_ctrl.bits.I2C_SLV_GRP = 0; 
+    i2c_slv0_ctrl.bits.I2C_SLV_LENG = 1; // whoami is 1 byte
+    
+    if(core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV0_CTRL), i2c_slv0_ctrl.byte))
+    {
+        return core::kBusFail;
+    }
+
+    // Map Status and Magnetometer readings to EXT_SENS_1-10
+    // HXL Starts at 0x10
+    if(core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV1_REG), 0x10))
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::I2C_SLV_CTRL i2c_slv1_ctrl;
+    i2c_slv1_ctrl.bits.I2C_SLV_EN = 1; // enable reading
+    i2c_slv1_ctrl.bits.I2C_SLV_BYTE_SW = 0; // disable byte swapping
+    i2c_slv1_ctrl.bits.I2C_SLV_REG_DIS = 0;
+    i2c_slv1_ctrl.bits.I2C_SLV_GRP = 0; 
+    i2c_slv1_ctrl.bits.I2C_SLV_LENG = 9; // 9 bytes for payload
+
+    if(core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV1_CTRL), i2c_slv1_ctrl.byte))
+    {
+        return core::kBusFail;
+    }
+
+    return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::VerifyMagWhoAmI()
+{
+    uint8_t mag_wia2;
+
+    if (core::kGood != m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kMAG_WIA2), mag_wia2))
+    {
+        return core::kBusFail;
+    }
+
+    if (kMagWhoAmIDefault != mag_wia2)
+    {
+        return core::kLogicFail;
+    }
+
+    return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::SetMagRate()
+{
     return core::kGood;
 }
 

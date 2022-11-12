@@ -21,10 +21,21 @@ public:
   core::Result Initialize();
 
 private:
-  // Initialization Methods
+  // Utility Methods
   core::Result SetupMagnetometer();
   core::Result EnableI2cMaster();
   core::Result ChangeUserBank(int);
+  core::Result DisableI2cMasterPassthrough();
+  core::Result ResetChip();
+  core::Result StopSleeping();
+  core::Result SetPower();
+  core::Result VerifyMagWhoAmI();
+  core::Result SetupRegisterBlock();
+  core::Result SetMagRate();
+
+  // Read/Write Methods
+  core::Result ReadMagByte(const uint8_t, uint8_t&);
+  
 
   std::unique_ptr<BusStrategy> m_bus;
 

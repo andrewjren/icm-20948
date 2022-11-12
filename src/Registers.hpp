@@ -43,15 +43,15 @@ enum class UserBank0Registers : uint8_t {
     kGYRO_ZOUT_L          = 0x38,
     kTEMP_OUT_H           = 0x39,
     kTEMP_OUT_L           = 0x3A,
-    kEXT_SLV_SENS_DATA_00 = 0x3B,
-    kEXT_SLV_SENS_DATA_01 = 0x3C,
-    kEXT_SLV_SENS_DATA_02 = 0x3D,
-    kEXT_SLV_SENS_DATA_03 = 0x3E,
-    kEXT_SLV_SENS_DATA_04 = 0x3F,
-    kEXT_SLV_SENS_DATA_05 = 0x40,
-    kEXT_SLV_SENS_DATA_06 = 0x41,
-    kEXT_SLV_SENS_DATA_07 = 0x42,
-    kEXT_SLV_SENS_DATA_08 = 0x43,
+    kMAG_WIA2             = 0x3B, // Note: These are labeled as "EXT_SLV_SENS_DATA_XX"
+    kMAG_ST1              = 0x3C, // in the datasheet, but are set up in the secondary
+    kMAG_HXL              = 0x3D, // controller to be mapped to magnetometer registers
+    kMAG_HXH              = 0x3E,
+    kMAG_HYL              = 0x3F,
+    kMAG_HYH              = 0x40,
+    kMAG_HZL              = 0x41,
+    kMAG_HZH              = 0x42,
+    kMAG_ST2              = 0x43, // end modified registers
     kEXT_SLV_SENS_DATA_09 = 0x44,
     kEXT_SLV_SENS_DATA_10 = 0x45,
     kEXT_SLV_SENS_DATA_11 = 0x46,
@@ -147,6 +147,7 @@ enum class UserBank3Registers : uint8_t {
     kREG_BANK_SEL       = 0x7F
 };
 
+// Note: Mag Registers are mapped to 
 enum class MagRegisters : uint8_t {
     kWIA2  = 0x01,
     kST1   = 0x10,
