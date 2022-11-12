@@ -32,6 +32,7 @@ private:
   core::Result VerifyMagWhoAmI();
   core::Result SetupRegisterBlock();
   core::Result SetMagRate();
+  core::Result SetAccelGyroModes();
 
   // Read/Write Methods
   core::Result ReadMagByte(const uint8_t, uint8_t&);

@@ -3,6 +3,7 @@
 // Project Includes
 #include "Icm20948.hpp"
 #include "CoreTypes.hpp"
+#include <iostream>
 
 imu::Icm20948Interface::Icm20948Interface()
 :
@@ -44,17 +45,20 @@ core::Result imu::Icm20948Interface::Initialize()
     }
 
     // ResetChip()
+    imu::decode::PWR_MGMT_1 pwr_mgmt_1;
+    pwr_mgmt_1.bits.DEVICE_RESET = 1;
 
-    // StopSleeping()
-
-    // SetPower()
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
+    {
+        return core::kBusFail;
+    }
 
     // Set Clock Source
     // select auto clock source
-    imu::decode::PWR_MGMT_1 pwr_mgmt_1;
     pwr_mgmt_1.bits.CLKSEL = 1; // select best available clock, PLL if available, otherwise 20 MHz clock
-    pwr_mgmt_1.bits.DEVICE_RESET = 0;
-    pwr_mgmt_1.bits.SLEEP = 0;
+    pwr_mgmt_1.bits.DEVICE_RESET = 0; // unset reset
+    pwr_mgmt_1.bits.SLEEP = 0; // wake chip
+    pwr_mgmt_1.bits.LP_EN = 0; // disable low power mode
 
     if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
     {
@@ -63,13 +67,53 @@ core::Result imu::Icm20948Interface::Initialize()
 
     // Set Sample Mode for Gyro and Accel
 
-    // Set Full Scale Range for Gyro and Accel
 
-    // Set Low Pass Filter for Gyro and Accell
+    // Set Full scales for Gyro and Accel
+    if (core::kGood != SetAccelGyroModes()) {
+        return core::kFail;
+    }
 
     // SetupMagnetometer
+    if (core::kGood != SetupMagnetometer()) {
+        return core::kFail;
+    }
     
     return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::SetAccelGyroModes()
+{
+    // Set Full Scale Range for Gyro and Accel
+    // Change User Bank to 2
+    if (core::kGood != ChangeUserBank(2))
+    {
+        return core::kBusFail; 
+    }
+
+    imu::decode::GYRO_CONFIG_1 gyro_config_1;
+    gyro_config_1.bits.GYRO_DLPFCFG = 0; 
+    gyro_config_1.bits.GYRO_FCHOICE = 0; 
+    gyro_config_1.bits.GYRO_FS_SEL =  0; // dps, informs LSB of Gyro
+
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kGYRO_CONFIG_1), gyro_config_1.byte) < 0)
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::ACCEL_CONFIG accel_config_1;
+    accel_config_1.bits.ACCEL_DLPFCFG = 0;
+    accel_config_1.bits.ACCEL_FCHOICE = 0;
+    accel_config_1.bits.ACCEL_FS_SEL  = 0;
+
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_CONFIG), accel_config_1.byte) < 0)
+    {
+        return core::kBusFail;
+    }
+
+    if (core::kGood != ChangeUserBank(0))
+    {
+        return core::kBusFail; 
+    }
 }
 
 /** 
@@ -80,20 +124,24 @@ core::Result imu::Icm20948Interface::SetupMagnetometer()
     if (core::kGood != DisableI2cMasterPassthrough()) {
         return core::kFail;
     }
+    std::cout << "Successfully disabled I2C Passthrough" << std::endl;
     
     if (core::kGood != EnableI2cMaster()) {
         return core::kFail;
     }
+    std::cout << "Successfully Enabled I2C Controller" << std::endl;
 
     // Setup Magnetometer Register Addresses
     if (core::kGood != SetupRegisterBlock()) {
         return core::kFail;
     }
+    std::cout << "Successfully Set Up I2C Proxy Registers" << std::endl;
 
     // Verify Mag Who Am I
     if (core::kGood != VerifyMagWhoAmI()) {
         return core::kFail;
     }
+    std::cout << "Successfully Verified Mag Who Am I" << std::endl;
 
     // Set Magnetometer rate
 
@@ -237,6 +285,12 @@ core::Result imu::Icm20948Interface::SetupRegisterBlock()
     i2c_slv1_ctrl.bits.I2C_SLV_LENG = 9; // 9 bytes for payload
 
     if(core::kGood != m_bus->Write(static_cast<uint8_t>(UserBank3Registers::kI2C_SLV1_CTRL), i2c_slv1_ctrl.byte))
+    {
+        return core::kBusFail;
+    }
+
+    // Change to User Bank 0
+    if (core::kGood != ChangeUserBank(0))
     {
         return core::kBusFail;
     }

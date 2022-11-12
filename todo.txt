@@ -1,3 +1,4 @@
 create common return value types
 pass in tomls as config params
 determine what should go where (registers, addresses, decoding, etc)
+custom log function
