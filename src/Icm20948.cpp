@@ -4,6 +4,7 @@
 #include "Icm20948.hpp"
 #include "CoreTypes.hpp"
 #include <iostream>
+#include <unistd.h>
 
 imu::Icm20948Interface::Icm20948Interface()
 :
@@ -44,6 +45,23 @@ core::Result imu::Icm20948Interface::Initialize()
         return core::kFail;
     }
 
+    // Set Full scales for Gyro and Accel
+    if (core::kGood != SetAccelGyroModes()) {
+        return core::kFail;
+    }
+    std::cout << "Successfully Initialized Accel and Gyro" << std::endl;
+
+    // SetupMagnetometer
+    if (core::kGood != SetupMagnetometer()) {
+        return core::kFail;
+    }
+
+    // Change User Bank to 0
+    if (ChangeUserBank(0) < 0)
+    {
+        return core::kBusFail; 
+    }
+
     // ResetChip()
     imu::decode::PWR_MGMT_1 pwr_mgmt_1;
     pwr_mgmt_1.bits.DEVICE_RESET = 1;
@@ -52,6 +70,8 @@ core::Result imu::Icm20948Interface::Initialize()
     {
         return core::kBusFail;
     }
+    std::cout << "THIS SHOULD BE A SLEEP!!" << std::endl;
+    sleep(1);
 
     // Set Clock Source
     // select auto clock source
@@ -64,16 +84,7 @@ core::Result imu::Icm20948Interface::Initialize()
     {
         return core::kBusFail;
     }
-
-    // Set Full scales for Gyro and Accel
-    if (core::kGood != SetAccelGyroModes()) {
-        return core::kFail;
-    }
-
-    // SetupMagnetometer
-    if (core::kGood != SetupMagnetometer()) {
-        return core::kFail;
-    }
+    std::cout << "Set Clock Source" << std::endl;
 
     // Select User Bank 0
     if (core::kGood != ChangeUserBank(0)) {
@@ -85,13 +96,13 @@ core::Result imu::Icm20948Interface::Initialize()
 
 float imu::Icm20948Interface::GetGyroX()
 {
-    uint16_t data;
+    int16_t data;
 
     if (core::kGood != ReadWord(UserBank0Registers::kGYRO_XOUT_H, UserBank0Registers::kGYRO_XOUT_L, data)) {
         return core::kBusFail;
     }
 
-    return data * m_gyro_lsb;
+    return (float) data * m_gyro_lsb;
 }
 
 core::Result imu::Icm20948Interface::SetAccelGyroModes()
@@ -102,16 +113,19 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
     {
         return core::kBusFail; 
     }
+    std::cout << "Changed User Bank" << std::endl;
 
     imu::decode::GYRO_SMPLRT_DIV gyro_smplrt_div = 10;
 
     if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kGYRO_SMPLRT_DIV), gyro_smplrt_div))
     {
+        std::cout << "Failed to write gyro sample rate" << std::endl;
         return core::kBusFail;
     }
+    std::cout << "set sample rate" << std::endl;
 
     imu::decode::GYRO_CONFIG_1 gyro_config_1;
-    m_gyro_lsb = 1/131;
+    m_gyro_lsb = 1.0/131.0;
     gyro_config_1.bits.GYRO_DLPFCFG = 1; // low pass filter setting   
     gyro_config_1.bits.GYRO_FCHOICE = 1; // enable low pass filter
     gyro_config_1.bits.GYRO_FS_SEL =  0; // dps, informs LSB of Gyro
@@ -120,6 +134,7 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
     {
         return core::kBusFail;
     }
+    std::cout << "configured gyro 1" << std::endl;
 
     imu::decode::GYRO_CONFIG_2 gyro_config_2;
     gyro_config_2.bits.GYRO_AVGCFG = 2;
@@ -131,6 +146,7 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
     {
         return core::kBusFail;
     }
+    std::cout << "configured gyro 2" << std::endl;
 
     imu::decode::ACCEL_SMPLRT_DIV_1 accel_smplrt_div_1;
     accel_smplrt_div_1.bits.RSVD = 0;
@@ -159,6 +175,7 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
     {
         return core::kBusFail;
     }
+    std::cout << "configured accel 1" << std::endl;
 
     imu::decode::ACCEL_CONFIG_2 accel_config_2;
     accel_config_2.bits.DEC3_CFG = 1;
@@ -175,6 +192,8 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
     {
         return core::kBusFail; 
     }
+
+    return core::kGood;
 }
 
 /** 
@@ -362,15 +381,18 @@ core::Result imu::Icm20948Interface::SetupRegisterBlock()
 core::Result imu::Icm20948Interface::VerifyMagWhoAmI()
 {
     uint8_t mag_wia2;
-
-    if (core::kGood != m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kMAG_WIA2), mag_wia2))
+    bool mag_verified = false;
+    int count = 0;
+    
+    while (count < 5 && !mag_verified)
     {
-        return core::kBusFail;
-    }
+        m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kMAG_WIA2), mag_wia2);
 
-    if (kMagWhoAmIDefault != mag_wia2)
-    {
-        return core::kLogicFail;
+        if (kMagWhoAmIDefault == mag_wia2)
+        {
+            mag_verified = true;
+        }
+        count++;
     }
 
     return core::kGood;
