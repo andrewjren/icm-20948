@@ -65,9 +65,6 @@ core::Result imu::Icm20948Interface::Initialize()
         return core::kBusFail;
     }
 
-    // Set Sample Mode for Gyro and Accel
-
-
     // Set Full scales for Gyro and Accel
     if (core::kGood != SetAccelGyroModes()) {
         return core::kFail;
@@ -77,8 +74,24 @@ core::Result imu::Icm20948Interface::Initialize()
     if (core::kGood != SetupMagnetometer()) {
         return core::kFail;
     }
+
+    // Select User Bank 0
+    if (core::kGood != ChangeUserBank(0)) {
+        return core::kFail;
+    }
     
     return core::kGood;
+}
+
+float imu::Icm20948Interface::GetGyroX()
+{
+    uint16_t data;
+
+    if (core::kGood != ReadWord(UserBank0Registers::kGYRO_XOUT_H, UserBank0Registers::kGYRO_XOUT_L, data)) {
+        return core::kBusFail;
+    }
+
+    return data * m_gyro_lsb;
 }
 
 core::Result imu::Icm20948Interface::SetAccelGyroModes()
@@ -90,22 +103,70 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
         return core::kBusFail; 
     }
 
-    imu::decode::GYRO_CONFIG_1 gyro_config_1;
-    gyro_config_1.bits.GYRO_DLPFCFG = 0; 
-    gyro_config_1.bits.GYRO_FCHOICE = 0; 
-    gyro_config_1.bits.GYRO_FS_SEL =  0; // dps, informs LSB of Gyro
+    imu::decode::GYRO_SMPLRT_DIV gyro_smplrt_div = 10;
 
-    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kGYRO_CONFIG_1), gyro_config_1.byte) < 0)
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kGYRO_SMPLRT_DIV), gyro_smplrt_div))
     {
         return core::kBusFail;
     }
 
-    imu::decode::ACCEL_CONFIG accel_config_1;
-    accel_config_1.bits.ACCEL_DLPFCFG = 0;
-    accel_config_1.bits.ACCEL_FCHOICE = 0;
-    accel_config_1.bits.ACCEL_FS_SEL  = 0;
+    imu::decode::GYRO_CONFIG_1 gyro_config_1;
+    m_gyro_lsb = 1/131;
+    gyro_config_1.bits.GYRO_DLPFCFG = 1; // low pass filter setting   
+    gyro_config_1.bits.GYRO_FCHOICE = 1; // enable low pass filter
+    gyro_config_1.bits.GYRO_FS_SEL =  0; // dps, informs LSB of Gyro
 
-    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_CONFIG), accel_config_1.byte) < 0)
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kGYRO_CONFIG_1), gyro_config_1.byte))
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::GYRO_CONFIG_2 gyro_config_2;
+    gyro_config_2.bits.GYRO_AVGCFG = 2;
+    gyro_config_2.bits.XGYRO_CTEN = 0;
+    gyro_config_2.bits.YGYRO_CTEN = 0;
+    gyro_config_2.bits.ZGYRO_CTEN = 0;
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kGYRO_CONFIG_2), gyro_config_2.byte))
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::ACCEL_SMPLRT_DIV_1 accel_smplrt_div_1;
+    accel_smplrt_div_1.bits.RSVD = 0;
+    accel_smplrt_div_1.bits.ACCEL_SMPLRT_DIV = 0;
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_SMPLRT_DIV_1), accel_smplrt_div_1.byte))
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::ACCEL_SMPLRT_DIV_2 accel_smplrt_div_2 = 10;
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_SMPLRT_DIV_2), accel_smplrt_div_2))
+    {
+        return core::kBusFail;
+    }
+
+
+    imu::decode::ACCEL_CONFIG accel_config_1;
+    accel_config_1.bits.ACCEL_DLPFCFG = 7;
+    accel_config_1.bits.ACCEL_FCHOICE = 1;
+    accel_config_1.bits.ACCEL_FS_SEL  = 0;
+    m_accel_lsb = 1/16384;
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_CONFIG), accel_config_1.byte))
+    {
+        return core::kBusFail;
+    }
+
+    imu::decode::ACCEL_CONFIG_2 accel_config_2;
+    accel_config_2.bits.DEC3_CFG = 1;
+    accel_config_2.bits.AX_ST_EN_REG = 0;
+    accel_config_2.bits.AY_ST_EN_REG = 0;
+    accel_config_2.bits.AZ_ST_EN_REG = 0;
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_CONFIG_2), accel_config_2.byte))
     {
         return core::kBusFail;
     }
@@ -121,12 +182,12 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
 */
 core::Result imu::Icm20948Interface::SetupMagnetometer()
 {
-    if (core::kGood != DisableI2cMasterPassthrough()) {
+    if (core::kGood != DisableI2cPassthrough()) {
         return core::kFail;
     }
     std::cout << "Successfully disabled I2C Passthrough" << std::endl;
     
-    if (core::kGood != EnableI2cMaster()) {
+    if (core::kGood != EnableI2cController()) {
         return core::kFail;
     }
     std::cout << "Successfully Enabled I2C Controller" << std::endl;
@@ -149,9 +210,9 @@ core::Result imu::Icm20948Interface::SetupMagnetometer()
 }
 
 /**
- * Enables I2C Master on ICM 20948
+ * Enables I2C sub-controller on ICM 20948
 */
-core::Result imu::Icm20948Interface::EnableI2cMaster()
+core::Result imu::Icm20948Interface::EnableI2cController()
 {
     // Change to UserBank0
     if (ChangeUserBank(0) < 0)
@@ -160,7 +221,7 @@ core::Result imu::Icm20948Interface::EnableI2cMaster()
     }
 
     imu::decode::USER_CTRL user_ctrl;
-    user_ctrl.bits.I2C_MST_EN = 1; // enable I2C master pins
+    user_ctrl.bits.I2C_MST_EN = 1; // enable I2C sub-controller pins
     user_ctrl.bits.DMP_EN = 0;
     user_ctrl.bits.DMP_RST = 0;
     user_ctrl.bits.FIFO_EN = 0;
@@ -182,7 +243,7 @@ core::Result imu::Icm20948Interface::EnableI2cMaster()
     imu::decode::I2C_MST_CTRL i2c_mst_ctrl;
     i2c_mst_ctrl.bits.I2C_MST_CLK = 7; // 400 Hz
     i2c_mst_ctrl.bits.I2C_MST_P_NSR = 0; // restart between reads
-    i2c_mst_ctrl.bits.MULT_MST_EN = 0; // disable multi master mode
+    i2c_mst_ctrl.bits.MULT_MST_EN = 0; // disable multi controller mode
 
     if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_MST_CTRL), i2c_mst_ctrl.byte))
     {
@@ -199,9 +260,9 @@ core::Result imu::Icm20948Interface::EnableI2cMaster()
 }
 
 /**
- * Disables I2C Master Passthrough by ensuring SCL/SDA and AUX_CL/AUX_DA are not shorted
+ * Disables I2C Passthrough by ensuring SCL/SDA and AUX_CL/AUX_DA are not shorted
 */
-core::Result imu::Icm20948Interface::DisableI2cMasterPassthrough()
+core::Result imu::Icm20948Interface::DisableI2cPassthrough()
 {
     // Switch to User Bank 0
     if (ChangeUserBank(0) != core::kGood)
@@ -217,7 +278,7 @@ core::Result imu::Icm20948Interface::DisableI2cMasterPassthrough()
         return core::kBusFail;
     }
 
-    // Set Disable I2C Master Passthrough
+    // Set Disable I2C Passthrough
     int_pin_cfg.bits.BYPASS_EN = 0;
 
     if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kINT_PIN_CFG), int_pin_cfg.byte))
@@ -337,6 +398,32 @@ core::Result imu::Icm20948Interface::ChangeUserBank(int user_bank)
     {
         return core::kBusFail; 
     }
+
+    return core::kGood;
+}
+
+/**
+ * Read Word from I2C Interface
+*/
+core::Result imu::Icm20948Interface::ReadWord(const UserBank0Registers reg_h, const UserBank0Registers reg_l, int16_t & data)
+{
+    // get addresses
+    const uint8_t addr_h = static_cast<uint8_t>(reg_h);
+    const uint8_t addr_l = static_cast<uint8_t>(reg_l);
+
+    // allocate storage for data
+    uint8_t data_h;
+    uint8_t data_l;
+
+    if (core::kGood != m_bus->Read(addr_h, data_h)) {
+        return core::kBusFail;
+    }
+
+    if (core::kGood != m_bus->Read(addr_l, data_l)) {
+        return core::kBusFail;
+    }
+
+    data = (int16_t) data_h << 8 | data_l;
 
     return core::kGood;
 }
