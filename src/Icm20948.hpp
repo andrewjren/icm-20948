@@ -8,7 +8,7 @@
 // Project Includes
 #include "Icm20948Types.hpp"
 #include "Registers.hpp"
-#include "InterfaceStrategy.hpp"
+#include "BusStrategy.hpp"
 #include "CoreTypes.hpp"
 
 namespace imu {

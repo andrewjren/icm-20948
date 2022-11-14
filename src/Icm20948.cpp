@@ -4,7 +4,7 @@
 #include "Icm20948.hpp"
 #include "CoreTypes.hpp"
 #include <iostream>
-#include <unistd.h>
+#include <unistd.h> // sleep()
 
 imu::Icm20948Interface::Icm20948Interface()
 :
@@ -71,7 +71,7 @@ core::Result imu::Icm20948Interface::Initialize()
         return core::kBusFail;
     }
     std::cout << "THIS SHOULD BE A SLEEP!!" << std::endl;
-    sleep(1);
+    sleep(0.1);
 
     // Set Clock Source
     // select auto clock source

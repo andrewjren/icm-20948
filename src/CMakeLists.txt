@@ -11,6 +11,7 @@ target_include_directories(icm20948
 PUBLIC
 ${CMAKE_CURRENT_SOURCE_DIR}
 ${CMAKE_CURRENT_SOURCE_DIR}/core
+${CMAKE_CURRENT_SOURCE_DIR}/bus
 )
 
 target_link_libraries(icm20948
