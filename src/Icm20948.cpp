@@ -12,36 +12,22 @@ m_bus(nullptr)
 { }
 
 imu::Icm20948Interface::~Icm20948Interface()
-{ }
+{
+    m_bus.reset(); 
+}
 
 core::Result imu::Icm20948Interface::Initialize()
 {
     // allocate memory for bus writer
     m_bus.reset(new imu::I2cStrategy());
 
-    // initialize bus
-    if (m_bus->Initialize(1, kIcm20948Addr) < 0)
-    {
+    // Initialize Bus
+    if (m_bus->Initialize(1, kIcm20948Addr) < 0) {
         return core::kBusFail; // Did not initialize correctly
     }
 
-    // CheckWhoAmI()
-    // Change User Bank to 0
-    if (ChangeUserBank(0) < 0)
-    {
-        return core::kBusFail; 
-    }
-
-    // determine WHO_AM_I
-    imu::decode::WHO_AM_I who_am_i;
-    if (m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kWHO_AM_I), who_am_i) < 0)
-    {
-        return core::kBusFail;
-    }
-
-    // verify WHO_AM_I is correct
-    if (kWhoAmIDefault != who_am_i)
-    {
+    // Verify ICM-20948 Who Am I
+    if (core::kGood != VerifyWhoAmI()) {
         return core::kFail;
     }
 
@@ -56,35 +42,15 @@ core::Result imu::Icm20948Interface::Initialize()
         return core::kFail;
     }
 
-    // Change User Bank to 0
-    if (ChangeUserBank(0) < 0)
-    {
-        return core::kBusFail; 
+    // Trigger Reset Chip
+    if (core::kGood != ResetChip()) {
+        return core::kFail;
     }
 
-    // ResetChip()
-    imu::decode::PWR_MGMT_1 pwr_mgmt_1;
-    pwr_mgmt_1.bits.DEVICE_RESET = 1;
-
-    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
-    {
-        return core::kBusFail;
+    // Set Clock Source to Optimal
+    if (core::kGood != SetClockSource()) {
+        return core::kFail;
     }
-    std::cout << "THIS SHOULD BE A SLEEP!!" << std::endl;
-    sleep(0.1);
-
-    // Set Clock Source
-    // select auto clock source
-    pwr_mgmt_1.bits.CLKSEL = 1; // select best available clock, PLL if available, otherwise 20 MHz clock
-    pwr_mgmt_1.bits.DEVICE_RESET = 0; // unset reset
-    pwr_mgmt_1.bits.SLEEP = 0; // wake chip
-    pwr_mgmt_1.bits.LP_EN = 0; // disable low power mode
-
-    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
-    {
-        return core::kBusFail;
-    }
-    std::cout << "Set Clock Source" << std::endl;
 
     // Select User Bank 0
     if (core::kGood != ChangeUserBank(0)) {
@@ -94,15 +60,82 @@ core::Result imu::Icm20948Interface::Initialize()
     return core::kGood;
 }
 
-float imu::Icm20948Interface::GetGyroX()
+/**
+ * Get Gyroscope Sensor measurements in degrees/sec
+*/
+core::Result imu::Icm20948Interface::GetGyros(float & gyro_x, float & gyro_y, float & gyro_z)
 {
+    // 16 bit signed int for storing raw data from I2C
     int16_t data;
 
     if (core::kGood != ReadWord(UserBank0Registers::kGYRO_XOUT_H, UserBank0Registers::kGYRO_XOUT_L, data)) {
         return core::kBusFail;
     }
+    gyro_x = (float) data * m_gyro_lsb;
 
-    return (float) data * m_gyro_lsb;
+    if (core::kGood != ReadWord(UserBank0Registers::kGYRO_YOUT_H, UserBank0Registers::kGYRO_YOUT_L, data)) {
+        return core::kBusFail;
+    }
+    gyro_y = (float) data * m_gyro_lsb;
+    
+    if (core::kGood != ReadWord(UserBank0Registers::kGYRO_ZOUT_H, UserBank0Registers::kGYRO_ZOUT_L, data)) {
+        return core::kBusFail;
+    }
+    gyro_z = (float) data * m_gyro_lsb;
+    
+    return core::kGood;
+}
+
+/**
+ * Get Accelerometer Sensor measurements in G's
+*/
+core::Result imu::Icm20948Interface::GetAccels(float & accel_x, float & accel_y, float & accel_z)
+{
+    // 16 bit signed int for storing raw data from I2C
+    int16_t data;
+
+    if (core::kGood != ReadWord(UserBank0Registers::kACCEL_XOUT_H, UserBank0Registers::kACCEL_XOUT_L, data)) {
+        return core::kBusFail;
+    }
+    accel_x = (float) data * m_accel_lsb;
+
+    if (core::kGood != ReadWord(UserBank0Registers::kACCEL_YOUT_H, UserBank0Registers::kACCEL_YOUT_L, data)) {
+        return core::kBusFail;
+    }
+    accel_y = (float) data * m_accel_lsb;
+    
+    if (core::kGood != ReadWord(UserBank0Registers::kACCEL_ZOUT_H, UserBank0Registers::kACCEL_ZOUT_L, data)) {
+        return core::kBusFail;
+    }
+    accel_z = (float) data * m_accel_lsb;
+    
+    return core::kGood;
+}
+
+/**
+ * Get Magnetometer Sensor measurements in uT's
+*/
+core::Result imu::Icm20948Interface::GetMags(float & mag_x, float & mag_y, float & mag_z)
+{
+    // 16 bit signed int for storing raw data from I2C
+    int16_t data;
+
+    if (core::kGood != ReadWord(UserBank0Registers::kMAG_HXH, UserBank0Registers::kMAG_HXL, data)) {
+        return core::kBusFail;
+    }
+    mag_x = (float) data * m_mag_lsb;
+
+    if (core::kGood != ReadWord(UserBank0Registers::kMAG_HYH, UserBank0Registers::kMAG_HYL, data)) {
+        return core::kBusFail;
+    }
+    mag_y = (float) data * m_mag_lsb;
+    
+    if (core::kGood != ReadWord(UserBank0Registers::kMAG_HZH, UserBank0Registers::kMAG_HZL, data)) {
+        return core::kBusFail;
+    }
+    mag_z = (float) data * m_mag_lsb;
+    
+    return core::kGood;
 }
 
 core::Result imu::Icm20948Interface::SetAccelGyroModes()
@@ -398,6 +431,27 @@ core::Result imu::Icm20948Interface::VerifyMagWhoAmI()
     return core::kGood;
 }
 
+core::Result imu::Icm20948Interface::VerifyWhoAmI()
+{
+    // Change User Bank to 0
+    if (ChangeUserBank(0) < 0) {
+        return core::kBusFail; 
+    }
+
+    // determine WHO_AM_I
+    imu::decode::WHO_AM_I who_am_i;
+    if (m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kWHO_AM_I), who_am_i) < 0)
+    {
+        return core::kBusFail;
+    }
+
+    // verify WHO_AM_I is correct
+    if (kWhoAmIDefault != who_am_i)
+    {
+        return core::kFail;
+    }
+}
+
 core::Result imu::Icm20948Interface::SetMagRate()
 {
     return core::kGood;
@@ -446,6 +500,49 @@ core::Result imu::Icm20948Interface::ReadWord(const UserBank0Registers reg_h, co
     }
 
     data = (int16_t) data_h << 8 | data_l;
+
+    return core::kGood;
+}
+
+/**
+ * Reset Chip
+*/
+core::Result imu::Icm20948Interface::ResetChip()
+{
+    if (ChangeUserBank(0) < 0) {
+        return core::kBusFail; 
+    }
+
+    imu::decode::PWR_MGMT_1 pwr_mgmt_1;
+    pwr_mgmt_1.bits.DEVICE_RESET = 1;
+
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
+    {
+        return core::kBusFail;
+    }
+
+    sleep(0.1);
+
+    return core::kGood;
+}
+
+/**
+ * Set Clock Source
+*/
+core::Result imu::Icm20948Interface::SetClockSource()
+{
+    // Set Clock Source
+    // select auto clock source
+    imu::decode::PWR_MGMT_1 pwr_mgmt_1;
+    pwr_mgmt_1.bits.CLKSEL = 1; // select best available clock, PLL if available, otherwise 20 MHz clock
+    pwr_mgmt_1.bits.DEVICE_RESET = 0; // unset reset
+    pwr_mgmt_1.bits.SLEEP = 0; // wake chip
+    pwr_mgmt_1.bits.LP_EN = 0; // disable low power mode
+
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kPWR_MGMT_1), pwr_mgmt_1.byte) < 0)
+    {
+        return core::kBusFail;
+    }
 
     return core::kGood;
 }

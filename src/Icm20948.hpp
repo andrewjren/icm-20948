@@ -19,8 +19,12 @@ public:
   ~Icm20948Interface();
 
   core::Result Initialize();
+  core::Result Configure();
 
-  float GetGyroX();
+  // Get Sensor Data
+  core::Result GetGyros(float &, float &, float &);
+  core::Result GetAccels(float &, float &, float &);
+  core::Result GetMags(float &, float &, float &);
 
 private:
   // Utility Methods
@@ -29,8 +33,10 @@ private:
   core::Result ChangeUserBank(int);
   core::Result DisableI2cPassthrough();
   core::Result ResetChip();
+  core::Result SetClockSource();
   core::Result StopSleeping();
   core::Result SetPower();
+  core::Result VerifyWhoAmI();
   core::Result VerifyMagWhoAmI();
   core::Result SetupRegisterBlock();
   core::Result SetMagRate();
@@ -49,9 +55,10 @@ private:
   const uint8_t kAk09916Addr   = 0x0C;
   const uint8_t kMagWhoAmIDefault = 0x09;
 
-  double m_gyro_lsb;
-  double m_accel_lsb;
-  double m_mag_lsb;
+  // Sensor LSB Values
+  double m_gyro_lsb;  // gyro and accel lsbs change with 
+  double m_accel_lsb; // settings
+  const double m_mag_lsb = 0.15; // uT/LSB, no change 
 
 }; // Icm20948Interface
 
