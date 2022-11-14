@@ -1,8 +1,9 @@
 #ifndef SRC_ICM20948TYPES_HPP
 #define SRC_ICM20948TYPES_HPP
 
+// Heavily borrowed from Stephen Murphy's ICM20948 C Driver
 // Reference: https://github.com/stephendpmurphy/icm20948
-// ICM 20948 Datasheet
+// Reference: ICM 20948 Datasheet
 
 namespace imu {
 
@@ -276,17 +277,6 @@ typedef union {
 
 typedef uint8_t TIMEBASE_CORRECTION_PLL;
 
-/*
-typedef union {
-    struct {
-        uint8_t RSVD0               : 4;
-        uint8_t USER_BANK           : 2;
-        uint8_t RSVD1               : 2;
-    } bits;
-    uint8_t byte;
-} REG_BANK_SEL;
-*/
-
 // Bank 2
 
 typedef uint8_t GYRO_SMPLRT_DIV;
@@ -396,16 +386,6 @@ typedef union {
     uint8_t byte;
 } MOD_CTRL_USR;
 
-/*
-typedef union {
-    struct {
-        uint8_t RSVD0               : 4;
-        uint8_t USER_BANK           : 2;
-        uint8_t RSVD1               : 2;
-    } bits;
-    uint8_t byte;
-} REG_BANK_SEL;
-*/
 
 // Bank 3
 
