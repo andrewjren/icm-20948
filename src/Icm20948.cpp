@@ -23,37 +23,43 @@ core::Result imu::Icm20948Interface::Initialize()
 
     // Initialize Bus
     if (m_bus->Initialize(1, kIcm20948Addr) < 0) {
+        std::cout << "Failed Bus Init" << std::endl;
         return core::kBusFail; // Did not initialize correctly
     }
 
     // Verify ICM-20948 Who Am I
     if (core::kGood != VerifyWhoAmI()) {
-        return core::kFail;
-    }
-
-    // Set Full scales for Gyro and Accel
-    if (core::kGood != SetAccelGyroModes()) {
-        return core::kFail;
-    }
-    std::cout << "Successfully Initialized Accel and Gyro" << std::endl;
-
-    // SetupMagnetometer
-    if (core::kGood != SetupMagnetometer()) {
+        std::cout << "Failed Who Am I Check" << std::endl;
         return core::kFail;
     }
 
     // Trigger Reset Chip
     if (core::kGood != ResetChip()) {
+        std::cout << "Failed ResetChip" << std::endl;
         return core::kFail;
     }
 
     // Set Clock Source to Optimal
     if (core::kGood != SetClockSource()) {
+        std::cout << "Failed Set Clock Source" << std::endl;
+        return core::kFail;
+    }
+
+    // Set Full scales for Gyro and Accel
+    if (core::kGood != SetAccelGyroModes()) {
+        std::cout << "Failed Accel Gyro Modes" << std::endl;
+        return core::kFail;
+    }
+
+    // SetupMagnetometer
+    if (core::kGood != SetupMagnetometer()) {
+        std::cout << "Failed Magnetometer Setup" << std::endl;
         return core::kFail;
     }
 
     // Select User Bank 0
     if (core::kGood != ChangeUserBank(0)) {
+        std::cout << "Failed Changing User Bank" << std::endl;
         return core::kFail;
     }
     
@@ -450,6 +456,8 @@ core::Result imu::Icm20948Interface::VerifyWhoAmI()
     {
         return core::kFail;
     }
+
+    return core::kGood;
 }
 
 core::Result imu::Icm20948Interface::SetMagRate()
@@ -521,7 +529,7 @@ core::Result imu::Icm20948Interface::ResetChip()
         return core::kBusFail;
     }
 
-    sleep(0.1);
+    sleep(1); // wait for chip to reset
 
     return core::kGood;
 }
@@ -531,6 +539,10 @@ core::Result imu::Icm20948Interface::ResetChip()
 */
 core::Result imu::Icm20948Interface::SetClockSource()
 {
+    if (ChangeUserBank(0) < 0) {
+        return core::kBusFail; 
+    }
+
     // Set Clock Source
     // select auto clock source
     imu::decode::PWR_MGMT_1 pwr_mgmt_1;
@@ -543,6 +555,8 @@ core::Result imu::Icm20948Interface::SetClockSource()
     {
         return core::kBusFail;
     }
+
+    sleep(1);
 
     return core::kGood;
 }

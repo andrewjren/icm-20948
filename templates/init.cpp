@@ -9,10 +9,13 @@ int main()
 {
     std::unique_ptr<imu::Icm20948Interface> icm(new imu::Icm20948Interface);
 
-    int i = icm->Initialize();
+    if (core::kGood != icm->Initialize())
+    {
+        std::cout << "Failed to Initialize Properly!" << std::endl;
+        return -1;
+    }
 
-    std::cout << "Initialize Return value: " << i << std::endl;
-    float gyro_x, gyro_y, gyro_z;
+    float gyro_x, gyro_y, gyro_z = 0.0;
     while(true)
     {
         auto start = std::chrono::system_clock::now();
@@ -26,6 +29,8 @@ int main()
         
         std::cout << "Gyro X: " << gyro_x << "Gyro Y: " << gyro_y << "Gyro Z: " << gyro_z << std::endl;
         std::cout << "duration in us: " << duration_us << std::endl;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     return 0;
 }

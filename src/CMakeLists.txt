@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(icm-20948-interface)
 
 set(src 
-"${CMAKE_CURRENT_SOURCE_DIR}/I2cStrategy.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/bus/I2cStrategy.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/Icm20948.cpp")
 
 add_library(icm20948 STATIC ${src})
