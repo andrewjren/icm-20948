@@ -443,8 +443,35 @@ typedef union {
     uint8_t byte;
 } I2C_SLV_CTRL;
 
+typedef union {
+    struct {
+        uint8_t I2C_SLV_DLY        : 5;
+        uint8_t I2C_SLV_REG_DIS    : 1;
+        uint8_t I2C_SLV_INT_EN     : 1;
+        uint8_t I2C_SLV_EN         : 1;
+    } bits;
+    uint8_t byte;
+} I2C_SLV04_CTRL;
+
 typedef uint8_t I2C_SLV_DO;
 
+typedef union {
+    struct {
+        uint8_t MODE_SINGLE : 1;
+        uint8_t MODE        : 3; // Range: 1-4
+        uint8_t SELF_TEST   : 1;
+        uint8_t RESERVED    : 3;
+    } bits;
+    uint8_t byte;
+} MAG_CNTL2;
+
+typedef union {
+    struct {
+        uint8_t RESERVED : 7;
+        uint8_t SRST     : 1;
+    } bits;
+    uint8_t byte;
+} MAG_CNTL3;
 
 } // namespace decode
 

@@ -208,7 +208,7 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
     accel_config_1.bits.ACCEL_DLPFCFG = 7;
     accel_config_1.bits.ACCEL_FCHOICE = 1;
     accel_config_1.bits.ACCEL_FS_SEL  = 0;
-    m_accel_lsb = 1/16384;
+    m_accel_lsb = 1.0/16384.0;
 
     if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank2Registers::kACCEL_CONFIG), accel_config_1.byte))
     {
@@ -241,28 +241,32 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
 core::Result imu::Icm20948Interface::SetupMagnetometer()
 {
     if (core::kGood != DisableI2cPassthrough()) {
+        std::cout << "Failed to disable I2C Passthrough" << std::endl;
         return core::kFail;
     }
-    std::cout << "Successfully disabled I2C Passthrough" << std::endl;
     
     if (core::kGood != EnableI2cController()) {
+        std::cout << "Failed to Enable I2C Controller" << std::endl;
         return core::kFail;
     }
-    std::cout << "Successfully Enabled I2C Controller" << std::endl;
 
     // Setup Magnetometer Register Addresses
     if (core::kGood != SetupRegisterBlock()) {
+        std::cout << "Failed to set up Register Block" << std::endl;
         return core::kFail;
     }
-    std::cout << "Successfully Set Up I2C Proxy Registers" << std::endl;
 
     // Verify Mag Who Am I
     if (core::kGood != VerifyMagWhoAmI()) {
+        std::cout << "Failed to Verify Mag Who Am I" << std::endl;
         return core::kFail;
     }
-    std::cout << "Successfully Verified Mag Who Am I" << std::endl;
 
     // Set Magnetometer rate
+    if (core::kGood != SetMagRate()) {
+        std::cout << "Failed Setting up Mag Rate" << std::endl;
+        return core::kFail;
+    }
 
     return core::kGood;
 }
@@ -272,26 +276,6 @@ core::Result imu::Icm20948Interface::SetupMagnetometer()
 */
 core::Result imu::Icm20948Interface::EnableI2cController()
 {
-    // Change to UserBank0
-    if (ChangeUserBank(0) < 0)
-    {
-        return core::kBusFail;
-    }
-
-    imu::decode::USER_CTRL user_ctrl;
-    user_ctrl.bits.I2C_MST_EN = 1; // enable I2C sub-controller pins
-    user_ctrl.bits.DMP_EN = 0;
-    user_ctrl.bits.DMP_RST = 0;
-    user_ctrl.bits.FIFO_EN = 0;
-    user_ctrl.bits.I2C_IF_DS = 0;
-    user_ctrl.bits.I2C_MST_RST = 0;
-    user_ctrl.bits.SRAM_RST = 0;
-    
-    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kUSER_CTRL), user_ctrl.byte))
-    {
-        return core::kBusFail;
-    }
-
     // Change to UserBank3
     if (core::kGood != ChangeUserBank(3))
     {
@@ -300,7 +284,7 @@ core::Result imu::Icm20948Interface::EnableI2cController()
 
     imu::decode::I2C_MST_CTRL i2c_mst_ctrl;
     i2c_mst_ctrl.bits.I2C_MST_CLK = 7; // 400 Hz
-    i2c_mst_ctrl.bits.I2C_MST_P_NSR = 0; // restart between reads
+    i2c_mst_ctrl.bits.I2C_MST_P_NSR = 1; // restart between reads
     i2c_mst_ctrl.bits.MULT_MST_EN = 0; // disable multi controller mode
 
     if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_MST_CTRL), i2c_mst_ctrl.byte))
@@ -309,7 +293,21 @@ core::Result imu::Icm20948Interface::EnableI2cController()
     }
 
     // Change to UserBank0
-    if (core::kGood != ChangeUserBank(0))
+    if (ChangeUserBank(0) < 0)
+    {
+        return core::kBusFail;
+    }
+
+    // Read current USER_CTRL register
+    imu::decode::USER_CTRL user_ctrl;
+    if (core::kGood != m_bus->Read(static_cast<uint8_t>(imu::UserBank0Registers::kUSER_CTRL), user_ctrl.byte))
+    {
+        return core::kBusFail;
+    }
+
+    user_ctrl.bits.I2C_MST_EN = 1; // enable I2C sub-controller pins
+    
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank0Registers::kUSER_CTRL), user_ctrl.byte))
     {
         return core::kBusFail;
     }
@@ -323,7 +321,7 @@ core::Result imu::Icm20948Interface::EnableI2cController()
 core::Result imu::Icm20948Interface::DisableI2cPassthrough()
 {
     // Switch to User Bank 0
-    if (ChangeUserBank(0) != core::kGood)
+    if (core::kGood != ChangeUserBank(0))
     {
         return core::kBusFail;
     }
@@ -408,17 +406,17 @@ core::Result imu::Icm20948Interface::SetupRegisterBlock()
         return core::kBusFail;
     }
 
+    return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::VerifyMagWhoAmI()
+{
     // Change to User Bank 0
     if (core::kGood != ChangeUserBank(0))
     {
         return core::kBusFail;
     }
 
-    return core::kGood;
-}
-
-core::Result imu::Icm20948Interface::VerifyMagWhoAmI()
-{
     uint8_t mag_wia2;
     bool mag_verified = false;
     int count = 0;
@@ -434,6 +432,10 @@ core::Result imu::Icm20948Interface::VerifyMagWhoAmI()
         count++;
     }
 
+    if (!mag_verified) {
+        return core::kFail;
+    }
+    
     return core::kGood;
 }
 
@@ -462,6 +464,16 @@ core::Result imu::Icm20948Interface::VerifyWhoAmI()
 
 core::Result imu::Icm20948Interface::SetMagRate()
 {
+    // Set Mag Rate to 100 Hz
+    imu::decode::MAG_CNTL2 mag_cntl2;
+    mag_cntl2.bits.MODE = 0x4; // for 100 Hz
+    mag_cntl2.bits.MODE_SINGLE = 0;
+    mag_cntl2.bits.SELF_TEST = 0;
+
+    if (core::kGood != WriteMagByte(static_cast<uint8_t>(MagRegisters::kCNTL2), mag_cntl2.byte)) {
+        return core::kFail;
+    }
+
     return core::kGood;
 }
 
@@ -557,6 +569,50 @@ core::Result imu::Icm20948Interface::SetClockSource()
     }
 
     sleep(1);
+
+    return core::kGood;
+}
+
+core::Result imu::Icm20948Interface::WriteMagByte(const uint8_t addr, const uint8_t data)
+{
+    // Use Target 4 to write 
+    if (core::kGood != ChangeUserBank(3)) {
+        return core::kBusFail; 
+    }
+
+    // Configure Target 4 for write
+    imu::decode::I2C_SLV_ADDR i2c_slv04_addr;
+    i2c_slv04_addr.bits.I2C_SLV_RNW = 0; // transfer is a write
+    i2c_slv04_addr.bits.I2C_ID = kAk09916Addr; // magnetometer address
+
+    if (core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_SLV4_ADDR), i2c_slv04_addr.byte))
+    {
+        return core::kBusFail;
+    }
+
+    // set Mag register to write to
+    if(core::kGood != m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_SLV4_REG), addr))
+    {
+        return core::kBusFail;
+    }
+
+    // set data out for Target 4
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_SLV4_DO), data))
+    {
+        return core::kBusFail;
+    }
+
+    // send write
+    imu::decode::I2C_SLV04_CTRL i2c_slv04_ctrl;
+    i2c_slv04_ctrl.bits.I2C_SLV_EN = 1;
+    i2c_slv04_ctrl.bits.I2C_SLV_INT_EN = 0;
+    i2c_slv04_ctrl.bits.I2C_SLV_REG_DIS = 0;
+    i2c_slv04_ctrl.bits.I2C_SLV_DLY = 0;
+
+    if (m_bus->Write(static_cast<uint8_t>(imu::UserBank3Registers::kI2C_SLV4_CTRL), i2c_slv04_ctrl.byte))
+    {
+        return core::kBusFail;
+    }
 
     return core::kGood;
 }

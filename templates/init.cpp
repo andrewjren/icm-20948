@@ -15,19 +15,29 @@ int main()
         return -1;
     }
 
-    float gyro_x, gyro_y, gyro_z = 0.0;
+    float gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z, mag_x, mag_y, mag_z;
     while(true)
     {
         auto start = std::chrono::system_clock::now();
         if (core::kGood != icm->GetGyros(gyro_x, gyro_y, gyro_z)) {
-            std::cout << "Faulty Value!" << std::endl;
+            std::cout << "Gyro Faulty Value!" << std::endl;
+            break;
+        }
+        if (core::kGood != icm->GetAccels(accel_x, accel_y, accel_z)) {
+            std::cout << "Accel Faulty Value!" << std::endl;
+            break;
+        }
+        if (core::kGood != icm->GetMags(mag_x, mag_y, mag_z)) {
+            std::cout << "Mag Faulty Value!" << std::endl;
             break;
         }
         
         auto end = std::chrono::system_clock::now();
         auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         
-        std::cout << "Gyro X: " << gyro_x << "Gyro Y: " << gyro_y << "Gyro Z: " << gyro_z << std::endl;
+        std::cout << "Gyro: " << gyro_x << ", " << gyro_y << ", " << gyro_z << std::endl;
+        std::cout << "Accel: " << accel_x << ", " << accel_y << ", " << accel_z << std::endl;
+        std::cout << "Mag: " << mag_x << ", " << mag_y << ", " << mag_z << std::endl;
         std::cout << "duration in us: " << duration_us << std::endl;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

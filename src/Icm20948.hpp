@@ -44,6 +44,7 @@ private:
 
   // Read/Write Methods
   core::Result ReadMagByte(const uint8_t, uint8_t&);
+  core::Result WriteMagByte(const uint8_t, const uint8_t);
   core::Result ReadWord(const UserBank0Registers, const UserBank0Registers, int16_t&);
   
 
