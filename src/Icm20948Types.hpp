@@ -1,8 +1,9 @@
 #ifndef SRC_ICM20948TYPES_HPP
 #define SRC_ICM20948TYPES_HPP
 
+// Heavily borrowed from Stephen Murphy's ICM20948 C Driver
 // Reference: https://github.com/stephendpmurphy/icm20948
-// ICM 20948 Datasheet
+// Reference: ICM 20948 Datasheet
 
 namespace imu {
 
@@ -276,17 +277,6 @@ typedef union {
 
 typedef uint8_t TIMEBASE_CORRECTION_PLL;
 
-/*
-typedef union {
-    struct {
-        uint8_t RSVD0               : 4;
-        uint8_t USER_BANK           : 2;
-        uint8_t RSVD1               : 2;
-    } bits;
-    uint8_t byte;
-} REG_BANK_SEL;
-*/
-
 // Bank 2
 
 typedef uint8_t GYRO_SMPLRT_DIV;
@@ -396,16 +386,6 @@ typedef union {
     uint8_t byte;
 } MOD_CTRL_USR;
 
-/*
-typedef union {
-    struct {
-        uint8_t RSVD0               : 4;
-        uint8_t USER_BANK           : 2;
-        uint8_t RSVD1               : 2;
-    } bits;
-    uint8_t byte;
-} REG_BANK_SEL;
-*/
 
 // Bank 3
 
@@ -426,7 +406,7 @@ typedef union {
         uint8_t MULT_MST_EN         : 1;
     } bits;
     uint8_t byte;
-} ISC_MST_CTRL;
+} I2C_MST_CTRL;
 
 typedef union {
     struct {
@@ -441,136 +421,57 @@ typedef union {
     uint8_t byte;
 } I2C_MST_DELAY_CTRL;
 
-// Slave 0
+// All I2C Targets are formatted the same
 typedef union {
     struct {
-        uint8_t I2C_ID_0            : 7;
-        uint8_t I2C_SLV0_RNW        : 1;
+        uint8_t I2C_ID             : 7;
+        uint8_t I2C_SLV_RNW        : 1;
     } bits;
     uint8_t byte;
-} I2C_SLV0_ADDR;
+} I2C_SLV_ADDR;
 
-typedef uint8_t I2C_SLV0_REG;
-
-typedef union {
-    struct {
-        uint8_t I2C_SLV0_LENG       : 4;
-        uint8_t I2C_SLV0_GRP        : 1;
-        uint8_t I2C_SLV0_REG_DIS    : 1;
-        uint8_t I2C_SLV0_BYTE_SW    : 1;
-        uint8_t I2C_SLV0_EN         : 1;
-    } bits;
-    uint8_t byte;
-} I2C_SLV0_CTRL;
-
-typedef uint8_t I2C_SLV0_DO;
-
-// Slave 1
-typedef union {
-    struct {
-        uint8_t I2C_ID_0            : 7;
-        uint8_t I2C_SLV0_RNW        : 1;
-    } bits;
-    uint8_t byte;
-} I2C_SLV1_ADDR;
-
-typedef uint8_t I2C_SLV1_REG;
+typedef uint8_t I2C_SLV_REG;
 
 typedef union {
     struct {
-        uint8_t I2C_SLV1_LENG       : 4;
-        uint8_t I2C_SLV1_GRP        : 1;
-        uint8_t I2C_SLV1_REG_DIS    : 1;
-        uint8_t I2C_SLV1_BYTE_SW    : 1;
-        uint8_t I2C_SLV1_EN         : 1;
+        uint8_t I2C_SLV_LENG       : 4;
+        uint8_t I2C_SLV_GRP        : 1;
+        uint8_t I2C_SLV_REG_DIS    : 1;
+        uint8_t I2C_SLV_BYTE_SW    : 1;
+        uint8_t I2C_SLV_EN         : 1;
     } bits;
     uint8_t byte;
-} I2C_SLV1_CTRL;
-
-typedef uint8_t I2C_SLV1_DO;
-
-// Slave 2
-typedef union {
-    struct {
-        uint8_t I2C_ID_2            : 7;
-        uint8_t I2C_SLV2_RNW        : 1;
-    } bits;
-    uint8_t byte;
-} I2C_SLV2_ADDR;
-
-typedef uint8_t I2C_SLV2_REG;
+} I2C_SLV_CTRL;
 
 typedef union {
     struct {
-        uint8_t I2C_SLV2_LENG       : 4;
-        uint8_t I2C_SLV2_GRP        : 1;
-        uint8_t I2C_SLV2_REG_DIS    : 1;
-        uint8_t I2C_SLV2_BYTE_SW    : 1;
-        uint8_t I2C_SLV2_EN         : 1;
+        uint8_t I2C_SLV_DLY        : 5;
+        uint8_t I2C_SLV_REG_DIS    : 1;
+        uint8_t I2C_SLV_INT_EN     : 1;
+        uint8_t I2C_SLV_EN         : 1;
     } bits;
     uint8_t byte;
-} I2C_SLV2_CTRL;
+} I2C_SLV04_CTRL;
 
-typedef uint8_t I2C_SLV2_DO;
-
-// Slave 3
-typedef union {
-    struct {
-        uint8_t I2C_ID_3            : 7;
-        uint8_t I2C_SLV3_RNW        : 1;
-    } bits;
-    uint8_t byte;
-} I2C_SLV3_ADDR;
-
-typedef uint8_t I2C_SLV3_REG;
+typedef uint8_t I2C_SLV_DO;
 
 typedef union {
     struct {
-        uint8_t I2C_SLV3_LENG       : 4;
-        uint8_t I2C_SLV3_GRP        : 1;
-        uint8_t I2C_SLV3_REG_DIS    : 1;
-        uint8_t I2C_SLV3_BYTE_SW    : 1;
-        uint8_t I2C_SLV3_EN         : 1;
+        uint8_t MODE_SINGLE : 1;
+        uint8_t MODE        : 3; // Range: 1-4
+        uint8_t SELF_TEST   : 1;
+        uint8_t RESERVED    : 3;
     } bits;
     uint8_t byte;
-} I2C_SLV3_CTRL;
-
-typedef uint8_t I2C_SLV3_DO;
-
-// Slave 4
-typedef union {
-    struct {
-        uint8_t I2C_ID_4            : 7;
-        uint8_t I2C_SLV4_RNW        : 1;
-    } bits;
-    uint8_t byte;
-} I2C_SLV4_ADDR;
-
-typedef uint8_t I2C_SLV4_REG;
+} MAG_CNTL2;
 
 typedef union {
     struct {
-        uint8_t I2C_SLV4_LENG       : 4;
-        uint8_t I2C_SLV4_GRP        : 1;
-        uint8_t I2C_SLV4_REG_DIS    : 1;
-        uint8_t I2C_SLV4_BYTE_SW    : 1;
-        uint8_t I2C_SLV4_EN         : 1;
+        uint8_t RESERVED : 7;
+        uint8_t SRST     : 1;
     } bits;
     uint8_t byte;
-} I2C_SLV4_CTRL;
-
-typedef uint8_t I2C_SLV4_DO;
-
-/*
-typedef union {
-    struct {
-        uint8_t RSVD0               : 4;
-        uint8_t USER_BANK           : 2;
-        uint8_t RSVD1               : 2;
-    } bits;
-    uint8_t byte;
-} REG_BANK_SEL;
-*/
+} MAG_CNTL3;
 
 } // namespace decode
 
