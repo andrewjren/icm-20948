@@ -1,5 +1,5 @@
-#ifndef SRC_INTERFACESTRATEGY_HPP
-#define SRC_INTERFACESTRATEGY_HPP
+#ifndef SRC_BUS_BUSSTRATEGY_HPP
+#define SRC_BUS_BUSSTRATEGY_HPP
 
 #include <stdint.h>
 
@@ -49,4 +49,4 @@ private:
 
 }; // namespace imu
 
-#endif // SRC_INTERFACESTRATEGY_HPP
+#endif // SRC_BUS_BUSSTRATEGY_HPP
