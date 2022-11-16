@@ -6,6 +6,20 @@
 
 imu::Icm20948Interface::Icm20948Interface()
 :
+m_gyro_smplrt_div(0),
+m_gyro_fs_sel(0),
+m_gyro_dlpfcfg(0),
+m_gyro_fchoice(0),
+m_gyro_avgcfg(0),
+m_accel_smplrt_div(0),
+m_accel_fs_sel(0),
+m_accel_dlpfcfg(0),
+m_accel_fchoice(0),
+m_accel_dec3_cfg(0),
+m_mag_enable_single(0),
+m_mag_cont_meas_mode(0),
+m_gyro_lsb(0),
+m_accel_lsb(0),
 m_bus(nullptr)
 { }
 

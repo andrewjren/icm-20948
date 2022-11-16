@@ -9,6 +9,10 @@ int main()
 {
     std::unique_ptr<imu::Icm20948Interface> icm(new imu::Icm20948Interface);
 
+    icm->ConfigureGyro(10, 0, 1, 1, 2);
+    icm->ConfigureAccel(10, 0, 7, 1, 1);
+    icm->ConfigureMag(false, 0x4);
+
     if (core::kGood != icm->Initialize())
     {
         std::cout << "Failed to Initialize Properly!" << std::endl;

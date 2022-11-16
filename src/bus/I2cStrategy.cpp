@@ -8,7 +8,6 @@
 // Project Includes
 #include "CoreTypes.hpp"
 
-// https://www.kernel.org/doc/Documentation/i2c/dev-interface
 // https://stackoverflow.com/questions/50154296/undefined-reference-to-i2c-smbus-read-word-dataint-unsigned-char
 // needs to be wrapped in extern C statement because it is not C++ ready
 extern "C" {
