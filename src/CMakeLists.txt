@@ -15,5 +15,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/bus
 )
 
 target_link_libraries(icm20948
-PUBLIC
-i2c)
+PRIVATE
+i2c
+)

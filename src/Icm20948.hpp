@@ -19,7 +19,9 @@ public:
   ~Icm20948Interface();
 
   core::Result Initialize();
-  core::Result Configure();
+  core::Result ConfigureGyro(const uint8_t, const uint8_t, const uint8_t, const bool, const uint8_t);
+  core::Result ConfigureAccel(const uint16_t, const uint8_t, const uint8_t, const bool, const uint8_t);
+  core::Result ConfigureMag(const bool, const uint8_t);
 
   // Get Sensor Data
   core::Result GetGyros(float &, float &, float &);
@@ -28,26 +30,27 @@ public:
 
 private:
   // Utility Methods
-  core::Result SetupMagnetometer();
-  core::Result EnableI2cController();
   core::Result ChangeUserBank(int);
-  core::Result DisableI2cPassthrough();
   core::Result ResetChip();
+
+  // Initialization Methods
   core::Result SetClockSource();
-  core::Result StopSleeping();
-  core::Result SetPower();
   core::Result VerifyWhoAmI();
-  core::Result VerifyMagWhoAmI();
-  core::Result SetupRegisterBlock();
-  core::Result SetMagRate();
   core::Result SetAccelGyroModes();
 
+  // Magnetometer Initialization Methods
+  core::Result SetupMagnetometer();
+  core::Result DisableI2cPassthrough();
+  core::Result EnableI2cController();
+  core::Result SetupRegisterBlock();
+  core::Result VerifyMagWhoAmI();
+  core::Result SetMagRate();
+
   // Read/Write Methods
-  core::Result ReadMagByte(const uint8_t, uint8_t&);
   core::Result WriteMagByte(const uint8_t, const uint8_t);
   core::Result ReadWord(const UserBank0Registers, const UserBank0Registers, int16_t&);
   
-
+  /* Local Reference for Bus Interface */
   std::unique_ptr<BusStrategy> m_bus;
 
   // consts
@@ -60,6 +63,26 @@ private:
   double m_gyro_lsb;  // gyro and accel lsbs change with 
   double m_accel_lsb; // settings
   const double m_mag_lsb = 0.15; // uT/LSB, no change 
+
+  
+  // Gyro Configuration Values
+  uint8_t m_gyro_smplrt_div;
+  uint8_t m_gyro_fs_sel;
+  uint8_t m_gyro_dlpfcfg;
+  bool    m_gyro_fchoice;
+  uint8_t m_gyro_avgcfg;
+
+  // Accel Configuration Values
+  uint16_t m_accel_smplrt_div;
+  uint8_t  m_accel_fs_sel;
+  uint8_t  m_accel_dlpfcfg;
+  bool     m_accel_fchoice;
+  uint8_t  m_accel_dec3_cfg;
+
+  // Mag Configuration Values
+  bool    m_mag_enable_single;
+  uint8_t m_mag_cont_meas_mode;
+  
 
 }; // Icm20948Interface
 
