@@ -441,7 +441,7 @@ core::Result imu::Icm20948Interface::SetAccelGyroModes()
 }
 
 /** 
- * Sets up AK09916 as I2C Slave on secondary I2C Bus
+ * Sets up AK09916 as I2C Target on secondary I2C Bus
 */
 core::Result imu::Icm20948Interface::SetupMagnetometer()
 {

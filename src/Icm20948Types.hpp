@@ -173,7 +173,7 @@ typedef uint8_t GYRO_ZOUT_H;
 typedef uint8_t GYRO_ZOUT_L;
 typedef uint8_t TEMP_OUT_H;
 typedef uint8_t TEMP_OUT_L;
-typedef uint8_t EXT_SLV_SENS_DATA[24]; // 24 external slave sense data registers
+typedef uint8_t EXT_SLV_SENS_DATA[24]; // 24 external target sense data registers
 
 typedef union {
     struct {
